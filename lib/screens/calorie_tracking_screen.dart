@@ -248,35 +248,32 @@ class _CalorieTrackingScreenState
 
   // ================= MACRO BAR =================
 
-  Widget _macroBar(
-    String label,
-    double value,
-    double goal,
-    Color color,
-  ) {
-    final progress =
-        (value / goal).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
-      children: [
-        Text(
-          "$label ${value.toStringAsFixed(0)}g",
-          style: const TextStyle(
-              fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 6),
-        LinearProgressIndicator(
-          value: progress,
-          minHeight: 8,
-          backgroundColor:
-              color.withOpacity(0.15),
-          valueColor:
-              AlwaysStoppedAnimation(color),
-        ),
-        const SizedBox(height: 16),
-      ],
+  Widget _miniMacro(String label, double value, double goal, Color color) {
+    final progress = (value / goal).clamp(0.0, 1.0);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text("${value.toInt()}g", style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 4,
+              backgroundColor: color.withOpacity(0.05),
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -297,56 +294,87 @@ class _CalorieTrackingScreenState
             .clamp(0.0, 1.0);
 
     return Scaffold(
-      appBar:
-          AppBar(title: const Text("Nutrition")),
+      backgroundColor: const Color(0xFFF7FAF8),
+      appBar: AppBar(
+        title: const Text("Nutrition Tracking"),
+        backgroundColor: Colors.green,
+        elevation: 0,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-
-            /// CALORIES
-            Text(
-              "Calories Remaining",
-              style:
-                  const TextStyle(
-                      color: Colors.grey),
+            /// CALORIES CONSUMED HERO
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.05),
+                    blurRadius: 20,
+                  )
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    "Calories Consumed Today",
+                    style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        provider.totalCalories.toStringAsFixed(0),
+                        style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.green,
+                        ),
+                      ),
+                      Text(
+                        " / ${provider.dailyGoal} kcal",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: calorieProgress,
+                      minHeight: 12,
+                      backgroundColor: Colors.grey.shade100,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              remaining
-                  .toStringAsFixed(0),
-              style:
-                  const TextStyle(
-                      fontSize: 36,
-                      fontWeight:
-                          FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: calorieProgress,
-              minHeight: 10,
+
+            const SizedBox(height: 24),
+
+            /// MACROS ROW
+            Row(
+              children: [
+                Expanded(child: _miniMacro("P", provider.totalProtein, 150, Colors.blue)),
+                const SizedBox(width: 12),
+                Expanded(child: _miniMacro("C", provider.totalCarbs, 250, Colors.orange)),
+                const SizedBox(width: 12),
+                Expanded(child: _miniMacro("F", provider.totalFat, 70, Colors.red)),
+              ],
             ),
 
-            const SizedBox(height: 20),
-
-            /// MACROS
-            _macroBar(
-                "Protein",
-                provider.totalProtein,
-                150,
-                Colors.blue),
-            _macroBar(
-                "Carbs",
-                provider.totalCarbs,
-                250,
-                Colors.orange),
-            _macroBar(
-                "Fat",
-                provider.totalFat,
-                70,
-                Colors.red),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             /// SEARCH
             TextField(
@@ -373,25 +401,31 @@ class _CalorieTrackingScreenState
 
             if (!_loading)
               Expanded(
-                child:
-                    ListView.builder(
-                  itemCount:
-                      _results.length,
-                  itemBuilder:
-                      (context,
-                          index) {
-                    final food =
-                        _results[index];
+                child: ListView.builder(
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    final food = _results[index];
+                    final double cal = _getNutrient(food, 1008);
+                    final double protein = _getNutrient(food, 1003);
 
-                    return ListTile(
-                      title: Text(
-                          food[
-                              "description"]),
-                      subtitle: Text(
-                          "${_getNutrient(food, 1008)} kcal / 100g"),
-                      onTap: () =>
-                          _showPortionSheet(
-                              food),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.restaurant, color: Colors.green),
+                        ),
+                        title: Text(food["description"],
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text("$cal kcal / 100g • ${protein.toInt()}g protein"),
+                        trailing: const Icon(Icons.add_circle_outline, color: Colors.green),
+                        onTap: () => _showPortionSheet(food),
+                      ),
                     );
                   },
                 ),

@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/workout_plan.dart';
-import '../models/workout_day.dart';
 
-class WorkoutPlanService {
+class WorkoutPlanService extends ChangeNotifier {
 
   static const _planKey = "saved_workout_plan";
 
@@ -26,6 +26,7 @@ class WorkoutPlanService {
 
       _currentPlan =
           WorkoutPlan.fromJson(decoded);
+      notifyListeners();
     }
   }
 
@@ -40,6 +41,7 @@ class WorkoutPlanService {
         jsonEncode(plan.toJson()));
 
     _currentPlan = plan;
+    notifyListeners();
 
     print("PLAN SAVED SUCCESSFULLY");
   }
@@ -80,5 +82,30 @@ class WorkoutPlanService {
         totalDays == 0) {return 0;}
     return completedDays /
         totalDays;
+  }
+
+  // ================= CLEAR / RESET =================
+
+  Future<void> clearCompletedWorkouts() async {
+    if (_currentPlan == null) return;
+
+    final remainingDays = _currentPlan!.days
+        .where((d) => !d.isCompleted)
+        .toList();
+
+    // Re-index days to maintain sequence
+    for (int i = 0; i < remainingDays.length; i++) {
+      remainingDays[i].dayNumber = i + 1;
+    }
+
+    final newPlan = WorkoutPlan(days: remainingDays);
+    await savePlan(newPlan);
+  }
+
+  Future<void> resetPlan() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_planKey);
+    _currentPlan = null;
+    notifyListeners();
   }
 }

@@ -4,10 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/food_entry.dart';
 
 class CalorieProvider extends ChangeNotifier {
-
   List<FoodEntry> _foods = [];
-
   int dailyGoal = 2000;
+  String _lastResetDate = "";
 
   double totalCalories = 0;
   double totalProtein = 0;
@@ -27,16 +26,24 @@ class CalorieProvider extends ChangeNotifier {
 
     // Load goal
     dailyGoal = prefs.getInt("daily_goal") ?? 2000;
+    _lastResetDate = prefs.getString("last_reset_date") ?? "";
 
-    // Load foods
-    final saved = prefs.getString("food_entries");
-    if (saved != null) {
-      final List decoded = jsonDecode(saved);
-      _foods =
-          decoded.map((e) => FoodEntry.fromMap(e)).toList();
-      _recalculate();
+    // Check for daily reset
+    final today = DateTime.now().toIso8601String().split("T")[0];
+    if (_lastResetDate != today) {
+      _foods = [];
+      _lastResetDate = today;
+      await _saveData();
+    } else {
+      // Load foods
+      final saved = prefs.getString("food_entries");
+      if (saved != null) {
+        final List decoded = jsonDecode(saved);
+        _foods = decoded.map((e) => FoodEntry.fromMap(e)).toList();
+      }
     }
 
+    _recalculate();
     notifyListeners();
   }
 
@@ -46,10 +53,9 @@ class CalorieProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setInt("daily_goal", dailyGoal);
+    await prefs.setString("last_reset_date", _lastResetDate);
 
-    final encoded =
-        jsonEncode(_foods.map((e) => e.toMap()).toList());
-
+    final encoded = jsonEncode(_foods.map((e) => e.toMap()).toList());
     await prefs.setString("food_entries", encoded);
   }
 
@@ -64,6 +70,9 @@ class CalorieProvider extends ChangeNotifier {
   // ================= ADD FOOD =================
 
   Future<void> addFood(FoodEntry entry) async {
+    // Double check reset before adding if app was kept open
+    _checkDailyReset();
+
     _foods.add(entry);
     _recalculate();
     await _saveData();
@@ -77,6 +86,18 @@ class CalorieProvider extends ChangeNotifier {
     _recalculate();
     await _saveData();
     notifyListeners();
+  }
+
+  // ================= DAILY RESET CHECK =================
+
+  void _checkDailyReset() {
+    final today = DateTime.now().toIso8601String().split("T")[0];
+    if (_lastResetDate != today) {
+      _foods = [];
+      _lastResetDate = today;
+      _recalculate();
+      _saveData();
+    }
   }
 
   // ================= RECALCULATE =================

@@ -176,4 +176,60 @@ Medical Conditions: ${profile.medicalConditions}
       return null;
     }
   }
+
+  // ================= DIET PLAN =================
+
+  Future<Map<String, dynamic>?> generateDietPlan(
+      UserProfile profile, int numberOfDays) async {
+    final prompt = """
+Return STRICT JSON only.
+
+Format:
+
+{
+  "days": [
+    {
+      "title": "Healthy Day 1",
+      "meals": ["Oatmeal with berries", "Chicken Salad"],
+      "isRest": false 
+    }
+  ]
+}
+
+- Meals: minimum 3 meals (Breakfast, Lunch, Dinner).
+- Do NOT add explanations.
+- Do NOT add markdown.
+- Do NOT add text before or after JSON.
+
+Generate full $numberOfDays day diet/meal plan.
+
+Goal: ${profile.goal}
+Dietary Preference: ${profile.level} (treat as diet style if applicable)
+Medical Conditions: ${profile.medicalConditions}
+""";
+
+    final raw = await _callGroq(prompt);
+
+    if (raw == null) return null;
+
+    try {
+      final startIndex = raw.indexOf("{");
+      final endIndex = raw.lastIndexOf("}");
+
+      if (startIndex == -1 || endIndex == -1) {
+        print("❌ No valid JSON found");
+        return null;
+      }
+
+      final jsonString = raw.substring(startIndex, endIndex + 1);
+
+      print("CLEANED DIET JSON:");
+      print(jsonString);
+
+      return jsonDecode(jsonString);
+    } catch (e) {
+      print("JSON parse error: $e");
+      return null;
+    }
+  }
 }

@@ -4,230 +4,213 @@ import '../providers/calorie_provider.dart';
 import '../services/user_profile_service.dart';
 import '../services/ai_planner_service.dart';
 import '../services/workout_plan_service.dart';
+import '../services/diet_plan_service.dart';
 import '../models/workout_plan.dart';
+import '../models/diet_plan.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() =>
-      _DashboardScreenState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState
-    extends State<DashboardScreen> {
-
+class _DashboardScreenState extends State<DashboardScreen> {
   String? _aiInsight;
   bool _loadingInsight = true;
-
-  final WorkoutPlanService _planService =
-      WorkoutPlanService();
 
   @override
   void initState() {
     super.initState();
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
-    await _loadInsight();
-    await _planService.loadPlan();
-    setState(() {});
+    _loadInsight();
   }
 
   Future<void> _loadInsight() async {
-
-    final profile =
-        await UserProfileService()
-            .getUserProfile();
+    final profile = await UserProfileService().getUserProfile();
 
     if (profile != null) {
+      final insight = await AIPlannerService().generateDailyInsight(profile);
 
-      final insight =
-          await AIPlannerService()
-              .generateDailyInsight(profile);
-
-      setState(() {
-        _aiInsight = insight;
-        _loadingInsight = false;
-      });
-
+      if (mounted) {
+        setState(() {
+          _aiInsight = insight;
+          _loadingInsight = false;
+        });
+      }
     } else {
-      setState(() {
-        _loadingInsight = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loadingInsight = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final calorieProvider = context.watch<CalorieProvider>();
+    final workoutService = context.watch<WorkoutPlanService>();
+    final dietService = context.watch<DietPlanService>();
 
-    final provider =
-        context.watch<CalorieProvider>();
+    final remaining = calorieProvider.dailyGoal - calorieProvider.totalCalories;
+    final calorieProgress = (calorieProvider.totalCalories / calorieProvider.dailyGoal).clamp(0.0, 1.0);
 
-    final remaining =
-        provider.dailyGoal -
-            provider.totalCalories;
-
-    final calorieProgress =
-        (provider.totalCalories /
-                provider.dailyGoal)
-            .clamp(0.0, 1.0);
-
-    final WorkoutPlan? plan =
-        _planService.currentPlan;
-
-    // 🔥 Calculate plan progress safely
-    int totalDays = 0;
-    int completedDays = 0;
-    double completionPercentage = 0;
-
-    if (plan != null) {
-      totalDays = plan.days.length;
-      completedDays = plan.days
-          .where((d) => d.isCompleted)
-          .length;
-
-      if (totalDays > 0) {
-        completionPercentage =
-            completedDays / totalDays;
-      }
-    }
+    final workoutPlan = workoutService.currentPlan;
+    final dietPlan = dietService.currentPlan;
 
     return Scaffold(
-      backgroundColor:
-          const Color(0xFFF7FAF8),
+      backgroundColor: const Color(0xFFF7FAF8),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _initialize,
+          onRefresh: () async {
+            await _loadInsight();
+          },
           child: SingleChildScrollView(
-            physics:
-                const AlwaysScrollableScrollPhysics(),
-            padding:
-                const EdgeInsets.all(24),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 const SizedBox(height: 10),
 
                 // ================= CALORIE HERO =================
                 Center(
                   child: Column(
                     children: [
-
-                      SizedBox(
-                        width: 160,
-                        height: 160,
-                        child: Stack(
-                          alignment:
-                              Alignment.center,
-                          children: [
-
-                            CircularProgressIndicator(
-                              value:
-                                  calorieProgress,
-                              strokeWidth: 12,
-                              backgroundColor:
-                                  Colors.grey
-                                      .shade200,
-                              valueColor:
-                                  const AlwaysStoppedAnimation(
-                                      Colors.green),
-                            ),
-
-                            Column(
-                              mainAxisAlignment:
-                                  MainAxisAlignment
-                                      .center,
-                              children: [
-                                Text(
-                                  "$remaining",
-                                  style:
-                                      const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight:
-                                        FontWeight.bold,
+                      GestureDetector(
+                        onTap: () => _showGoalEditDialog(context, calorieProvider),
+                        child: Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.1),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              )
+                            ],
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Background Track
+                              ShaderMask(
+                                shaderCallback: (rect) {
+                                  return SweepGradient(
+                                    startAngle: 0,
+                                    endAngle: 3.14 * 2,
+                                    stops: [calorieProgress, calorieProgress],
+                                    colors: [
+                                      Colors.greenAccent.shade400,
+                                      Colors.grey.shade200,
+                                    ],
+                                  ).createShader(rect);
+                                },
+                                child: Container(
+                                  width: 180,
+                                  height: 180,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                const Text(
-                                  "kcal left",
-                                  style:
-                                      TextStyle(
-                                          color: Colors
-                                              .grey),
+                              ),
+                              // Inner White Circle
+                              Container(
+                                width: 155,
+                                height: 155,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
                                 ),
-                              ],
-                            ),
-                          ],
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "${calorieProvider.totalCalories.toInt()}",
+                                      style: const TextStyle(
+                                        fontSize: 42,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -1,
+                                      ),
+                                    ),
+                                    Text(
+                                      "OF ${calorieProvider.dailyGoal}",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      "kcal consumed",
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Edit Icon Overlay
+                              Positioned(
+                                bottom: 10,
+                                right: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                                ),
+                              )
+                            ],
+                          ),
                         ),
                       ),
-
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
 
-                // ================= PLAN PREVIEW =================
-                if (plan != null) ...[
-
+                // ================= WORKOUT PLAN PREVIEW =================
+                if (workoutPlan != null) ...[
                   const Text(
-                    "Your Workout Plan",
+                    "Workout Progress",
                     style: TextStyle(
                       fontSize: 18,
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  _buildPlanCard(
+                    progress: workoutService.progress,
+                    label: "${workoutService.completedDays} / ${workoutService.totalDays} days",
+                  ),
+                  const SizedBox(height: 24),
+                ],
 
-                  const SizedBox(height: 16),
-
-                  Container(
-                    padding:
-                        const EdgeInsets.all(20),
-                    decoration:
-                        BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(
-                              20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black
-                              .withOpacity(0.05),
-                          blurRadius: 10,
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment
-                              .start,
-                      children: [
-
-                        LinearProgressIndicator(
-                          value:
-                              completionPercentage,
-                          minHeight: 8,
-                          backgroundColor:
-                              Colors.grey
-                                  .shade200,
-                          color: Colors.green,
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        Text(
-                          "$completedDays / $totalDays days completed",
-                          style: const TextStyle(
-                              fontSize: 14),
-                        ),
-                      ],
+                // ================= DIET PLAN PREVIEW =================
+                if (dietPlan != null) ...[
+                  const Text(
+                    "Diet Progress",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 12),
+                  _buildPlanCard(
+                    progress: dietService.progress,
+                    label: "${dietService.completedDays} / ${dietService.totalDays} days",
+                  ),
+                  const SizedBox(height: 24),
                 ],
 
                 // ================= MACROS =================
@@ -235,79 +218,45 @@ class _DashboardScreenState
                   "Macros",
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                _macroBar(
-                    "Protein",
-                    provider.totalProtein,
-                    150,
-                    Colors.blue),
-
-                _macroBar(
-                    "Carbs",
-                    provider.totalCarbs,
-                    250,
-                    Colors.orange),
-
-                _macroBar(
-                    "Fat",
-                    provider.totalFat,
-                    70,
-                    Colors.red),
+                _macroBar("Protein", calorieProvider.totalProtein, 150, Colors.blue),
+                _macroBar("Carbs", calorieProvider.totalCarbs, 250, Colors.orange),
+                _macroBar("Fat", calorieProvider.totalFat, 70, Colors.red),
 
                 const SizedBox(height: 40),
 
                 // ================= AI INSIGHT =================
                 const Text(
-                  "AI Insight of the Day",
+                  "Daily AI Coach Tip",
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
                 Container(
-                  padding:
-                      const EdgeInsets.all(
-                          20),
-                  decoration:
-                      BoxDecoration(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius:
-                        BorderRadius
-                            .circular(20),
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors
-                            .black
-                            .withOpacity(
-                                0.05),
+                        color: Colors.black.withOpacity(0.05),
                         blurRadius: 10,
                       )
                     ],
                   ),
                   child: _loadingInsight
-                      ? const Center(
-                          child:
-                              CircularProgressIndicator(),
-                        )
+                      ? const Center(child: CircularProgressIndicator())
                       : Text(
-                          _aiInsight ??
-                              "Stay consistent today 💪",
-                          style:
-                              const TextStyle(
-                                  fontSize:
-                                      15),
+                          _aiInsight ?? "Stay consistent today 💪",
+                          style: const TextStyle(fontSize: 15),
                         ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -316,53 +265,124 @@ class _DashboardScreenState
     );
   }
 
-  Widget _macroBar(
-      String title,
-      double value,
-      double goal,
-      Color color) {
-
-    final progress =
-        (value / goal).clamp(0.0, 1.0);
-
-    return Padding(
-      padding:
-          const EdgeInsets.only(
-              bottom: 18),
+  Widget _buildPlanCard({required double progress, required String label}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
+      ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment
-                .start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          Row(
-            mainAxisAlignment:
-                MainAxisAlignment
-                    .spaceBetween,
-            children: [
-              Text(title),
-              Text(
-                  "${value.toStringAsFixed(0)}g / ${goal.toInt()}g"),
-            ],
-          ),
-
-          const SizedBox(height: 6),
-
           ClipRRect(
-            borderRadius:
-                BorderRadius.circular(
-                    10),
-            child:
-                LinearProgressIndicator(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
               value: progress,
               minHeight: 10,
-              backgroundColor:
-                  Colors.grey
-                      .shade200,
-              valueColor:
-                  AlwaysStoppedAnimation(
-                      color),
+              backgroundColor: Colors.grey.shade100,
+              color: Colors.green,
             ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _macroBar(String title, double value, double goal, Color color) {
+    final progress = (value / goal).clamp(0.0, 1.0);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.05),
+              blurRadius: 10,
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                Text(
+                  "${value.toStringAsFixed(0)}g / ${goal.toInt()}g",
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: Colors.grey.shade100,
+                valueColor: AlwaysStoppedAnimation(color),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showGoalEditDialog(BuildContext context, CalorieProvider provider) {
+    final controller = TextEditingController(text: provider.dailyGoal.toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Set Daily Calorie Goal"),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            hintText: "Enter calories (e.g. 2500)",
+            suffixText: "kcal",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCEL"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = int.tryParse(controller.text);
+              if (val != null && val > 0) {
+                provider.setDailyGoal(val);
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text("SAVE", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

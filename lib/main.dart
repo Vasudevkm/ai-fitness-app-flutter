@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/auth_wrapper.dart';
 import 'providers/calorie_provider.dart';
+import 'services/workout_plan_service.dart';
+import 'services/diet_plan_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,9 +18,20 @@ void main() async {
 
   await Firebase.initializeApp();
 
+  final workoutService = WorkoutPlanService();
+  final dietService = DietPlanService();
+
+  // Pre-load data
+  await workoutService.loadPlan();
+  await dietService.loadPlan();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => CalorieProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CalorieProvider()),
+        ChangeNotifierProvider.value(value: workoutService),
+        ChangeNotifierProvider.value(value: dietService),
+      ],
       child: const MyApp(),
     ),
   );

@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/ai_planner_service.dart';
 import '../services/user_profile_service.dart';
 import '../services/workout_plan_service.dart';
+import '../services/diet_plan_service.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_day.dart';
+import '../models/diet_plan.dart';
+import '../models/diet_day.dart';
 import '../models/user_profile.dart';
 
 class AICoachSheet extends StatefulWidget {
@@ -136,60 +140,95 @@ class _AICoachSheetState extends State<AICoachSheet> {
       return;
     }
 
-    // ================= DYNAMIC DAY DETECTION =================
+    // ================= DYNAMIC PLAN DETECTION =================
 
-    final RegExp dayRegex = RegExp(r'(\d+)\s*day');
-    final match = dayRegex.firstMatch(text.toLowerCase());
+    final lowercaseText = text.toLowerCase();
+    final bool isDietPlan = lowercaseText.contains("diet") || lowercaseText.contains("meal");
+    final bool isWorkoutPlan = lowercaseText.contains("workout") || lowercaseText.contains("exercise");
+    final bool isPlanRequest = lowercaseText.contains("plan") || lowercaseText.contains("schedule");
 
-    if (match != null) {
+    if (isPlanRequest && (isDietPlan || isWorkoutPlan)) {
+      final RegExp dayRegex = RegExp(r'(\d+)\s*day');
+      final match = dayRegex.firstMatch(lowercaseText);
+      final int numberOfDays = int.tryParse(match?.group(1) ?? "") ?? 7; // Default to 7 days
 
-      final int numberOfDays =
-          int.tryParse(match.group(1) ?? "") ?? 30;
+      if (isDietPlan) {
+        // ================= DIET PLAN GENERATION =================
+        final planData = await AIPlannerService()
+            .generateDietPlan(profile, numberOfDays);
 
-      final planData =
-          await AIPlannerService()
-              .generateCustomDayPlan(profile, numberOfDays);
+        if (planData != null) {
+          final List daysJson = planData["days"] ?? [];
+          final days = daysJson.asMap().entries.map((entry) {
+            final index = entry.key;
+            final data = entry.value;
 
-      if (planData != null) {
+            return DietDay(
+              dayNumber: index + 1,
+              title: data["title"] ?? "Meals",
+              meals: List<String>.from(data["meals"] ?? []),
+              isCompleted: false,
+              completedAt: null,
+            );
+          }).toList();
 
-        final List daysJson =
-            planData["days"] ?? [];
+          final plan = DietPlan(days: days);
+          if (mounted) {
+            await context.read<DietPlanService>().savePlan(plan);
+          }
 
-        final days =
-            daysJson.asMap().entries.map((entry) {
-
-          final index = entry.key;
-          final data = entry.value;
-
-          return WorkoutDay(
-            dayNumber: index + 1,
-            title: data["title"] ?? "Workout",
-            exercises:
-                List<String>.from(data["exercises"] ?? []),
-            isRest: data["isRest"] ?? false,
-            isCompleted: false,
-            completedAt: null,
-          );
-
-        }).toList();
-
-        final plan = WorkoutPlan(days: days);
-
-        final service = WorkoutPlanService();
-        await service.savePlan(plan);
-
-        setState(() {
-          _messages.add({
-            "role": "assistant",
-            "content":
-                "✅ $numberOfDays-day workout plan created successfully!"
+          setState(() {
+            _messages.add({
+              "role": "assistant",
+              "content":
+                  "🥗 $numberOfDays-day diet plan created successfully! Check it in the Plan tab."
+            });
+            _loading = false;
           });
-          _loading = false;
-        });
 
-        await _saveChatHistory();
-        _scrollToBottom();
-        return;
+          await _saveChatHistory();
+          _scrollToBottom();
+          return;
+        }
+      } else {
+        // ================= WORKOUT PLAN GENERATION =================
+        final planData = await AIPlannerService()
+            .generateCustomDayPlan(profile, numberOfDays);
+
+        if (planData != null) {
+          final List daysJson = planData["days"] ?? [];
+          final days = daysJson.asMap().entries.map((entry) {
+            final index = entry.key;
+            final data = entry.value;
+
+            return WorkoutDay(
+              dayNumber: index + 1,
+              title: data["title"] ?? "Workout",
+              exercises: List<String>.from(data["exercises"] ?? []),
+              isRest: data["isRest"] ?? false,
+              isCompleted: false,
+              completedAt: null,
+            );
+          }).toList();
+
+          final plan = WorkoutPlan(days: days);
+          if (mounted) {
+            await context.read<WorkoutPlanService>().savePlan(plan);
+          }
+
+          setState(() {
+            _messages.add({
+              "role": "assistant",
+              "content":
+                  "✅ $numberOfDays-day workout plan created successfully!"
+            });
+            _loading = false;
+          });
+
+          await _saveChatHistory();
+          _scrollToBottom();
+          return;
+        }
       }
     }
 
