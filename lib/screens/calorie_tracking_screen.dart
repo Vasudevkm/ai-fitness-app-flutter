@@ -263,115 +263,133 @@ class _CalorieTrackingScreenState
           title: const Text("Nutrition Tracking"),
           backgroundColor: Colors.green,
           elevation: 0,
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: "TODAY'S LOG", icon: Icon(Icons.list_alt)),
-              Tab(text: "ADD FOOD", icon: Icon(Icons.search)),
-            ],
-            indicatorColor: Colors.white,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold),
-          ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              /// CALORIES CONSUMED HERO
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withOpacity(0.05),
-                      blurRadius: 20,
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Calories Consumed Today",
-                          style: TextStyle(
-                              color: Colors.grey, fontWeight: FontWeight.w500),
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    children: [
+                      /// CALORIES CONSUMED HERO
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.05),
+                              blurRadius: 20,
+                            )
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _showGoalEditDialog(context, provider),
-                          child: const Icon(Icons.edit,
-                              size: 16, color: Colors.green),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  "Calories Consumed Today",
+                                  style: TextStyle(
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () =>
+                                      _showGoalEditDialog(context, provider),
+                                  child: const Icon(Icons.edit,
+                                      size: 16, color: Colors.green),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  provider.totalCalories.toStringAsFixed(0),
+                                  style: const TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                                Text(
+                                  " / ${provider.dailyGoal} kcal",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey.shade400,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: calorieProgress,
+                                minHeight: 12,
+                                backgroundColor: Colors.grey.shade100,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          provider.totalCalories.toStringAsFixed(0),
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.green,
-                          ),
-                        ),
-                        Text(
-                          " / ${provider.dailyGoal} kcal",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey.shade400,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: calorieProgress,
-                        minHeight: 12,
-                        backgroundColor: Colors.grey.shade100,
-                        color: Colors.green,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+
+                      /// MACROS ROW
+                      Row(
+                        children: [
+                          Expanded(
+                              child: _miniMacro(
+                                  "P", provider.totalProtein, 150, Colors.blue)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _miniMacro(
+                                  "C", provider.totalCarbs, 250, Colors.orange)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _miniMacro(
+                                  "F", provider.totalFat, 70, Colors.red)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              /// MACROS ROW
-              Row(
-                children: [
-                  Expanded(
-                      child: _miniMacro("P", provider.totalProtein, 150, Colors.blue)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: _miniMacro("C", provider.totalCarbs, 250, Colors.orange)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: _miniMacro("F", provider.totalFat, 70, Colors.red)),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildTodayLog(provider),
-                    _buildAddFoodTab(),
-                  ],
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SliverAppBarDelegate(
+                  const TabBar(
+                    tabs: [
+                      Tab(text: "TODAY'S LOG", icon: Icon(Icons.list_alt)),
+                      Tab(text: "ADD FOOD", icon: Icon(Icons.search)),
+                    ],
+                    indicatorColor: Colors.green,
+                    labelColor: Colors.green,
+                    unselectedLabelColor: Colors.grey,
+                    labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ],
+            ];
+          },
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TabBarView(
+              children: [
+                _buildTodayLog(provider),
+                _buildAddFoodTab(),
+              ],
+            ),
           ),
         ),
       ),
@@ -465,5 +483,30 @@ class _CalorieTrackingScreenState
           ),
       ],
     );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: const Color(0xFFF7FAF8),
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }
