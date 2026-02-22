@@ -214,7 +214,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 // ================= AI INSIGHT =================
                 const Text(
-                  "Daily AI Coach Tip",
+                  "Aarya's Daily Tip",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

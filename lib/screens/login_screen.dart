@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 import '../services/auth_service.dart';
+import '../services/data_reset_service.dart';
 import 'register_screen.dart';
 import 'dashboard_screen.dart';
 
@@ -23,17 +24,17 @@ class LoginScreen extends StatelessWidget {
           children: [
             // Title
             Text(
-              "Welcome back 👋",
+              "Arogya",
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                fontSize: 40,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.primary,
+                letterSpacing: 2,
               ),
             ),
             const SizedBox(height: 8),
-
             Text(
-              "Login to continue your fitness journey",
+              "Welcome back to your journey.",
               style: TextStyle(
                 fontSize: 16,
                 color: AppTheme.textSecondary,
@@ -78,13 +79,20 @@ class LoginScreen extends StatelessWidget {
                       passwordController.text.trim(),
                     );
 
+                    // Reset all local data after a successful login to ensure no leakage from previous user
+                    if (context.mounted) {
+                      await DataResetService.resetAllData(context);
+                    }
+
                     // Navigate to Dashboard
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DashboardScreen(),
-                      ),
-                    );
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DashboardScreen(),
+                        ),
+                      );
+                    }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

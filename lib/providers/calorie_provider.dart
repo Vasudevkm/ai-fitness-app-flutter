@@ -100,6 +100,15 @@ class CalorieProvider extends ChangeNotifier {
     }
   }
 
+  // ================= CLEAR DATA =================
+
+  Future<void> clearData() async {
+    _foods = [];
+    dailyGoal = 2000;
+    _recalculate();
+    notifyListeners();
+  }
+
   // ================= RECALCULATE =================
 
   void _recalculate() {

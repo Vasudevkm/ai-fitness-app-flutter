@@ -103,7 +103,7 @@ class _AICoachSheetState extends State<AICoachSheet> {
     setState(() {
       _messages.add({
         "role": "assistant",
-        "content": "Hi $name 👋\n\nI’m your AI fitness coach. Ask me anything!"
+        "content": "Hi $name! I'm Aarya, your AI Fitness Coach. I'm here to help you reach your goals, whether it's building muscle, losing weight, or just staying active. How can I assist you today?"
       });
     });
 
@@ -256,38 +256,88 @@ class _AICoachSheetState extends State<AICoachSheet> {
   Widget build(BuildContext context) {
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF7FAF8),
+      appBar: AppBar(
+        title: const Text("Chat with Aarya"),
+        backgroundColor: Colors.green,
+        elevation: 0,
+      ),
       body: Column(
         children: [
-
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              itemCount: _messages.length + 1,
               itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.smart_toy,
+                            color: Colors.green, size: 40),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "Aarya",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Text(
+                        "Your Personal Fitness AI",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  );
+                }
 
-                final message = _messages[index];
+                final message = _messages[index - 1];
                 final isUser = message["role"] == "user";
 
                 return Align(
-                  alignment: isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
+                  alignment:
+                      isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          isUser ? Colors.green : Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(16),
+                      color: isUser ? Colors.green : Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: Radius.circular(isUser ? 20 : 0),
+                        bottomRight: Radius.circular(isUser ? 0 : 20),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Text(
                       message["content"] ?? "",
                       style: TextStyle(
-                        color: isUser
-                            ? Colors.white
-                            : Colors.black87,
+                        fontSize: 15,
+                        color: isUser ? Colors.white : Colors.black87,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -299,25 +349,54 @@ class _AICoachSheetState extends State<AICoachSheet> {
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.green,
+                ),
+              ),
             ),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  offset: const Offset(0, -5),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: "Ask something...",
-                      border: OutlineInputBorder(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: const InputDecoration(
+                        hintText: "Ask Aarya anything...",
+                        hintStyle: TextStyle(color: Colors.grey),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        border: InputBorder.none,
+                      ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: Colors.green,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                    onPressed: _sendMessage,
+                  ),
                 ),
               ],
             ),

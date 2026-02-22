@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_profile.dart';
 import '../services/user_profile_service.dart';
+import '../services/data_reset_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/fitness_utils.dart';
 
@@ -180,10 +181,14 @@ class _ProfileEditScreenState
           ),
           TextButton(
             onPressed: () async {
-              await FirebaseAuth
-                  .instance
-                  .signOut();
-              Navigator.pop(context);
+              // Reset all data for a clean slate
+              await DataResetService.resetAllData(context);
+              
+              await FirebaseAuth.instance.signOut();
+              
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             },
             child: const Text(
               "Logout",

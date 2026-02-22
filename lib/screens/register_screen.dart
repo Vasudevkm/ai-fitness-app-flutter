@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 import '../services/auth_service.dart';
+import '../services/data_reset_service.dart';
 import 'profile_setup_screen.dart';
 
 class RegisterScreen extends StatelessWidget {
@@ -82,6 +83,11 @@ class RegisterScreen extends StatelessWidget {
                       emailController.text.trim(),
                       passwordController.text.trim(),
                     );
+
+                    // Clear any lingering local data from previous users on this device
+                    if (context.mounted) {
+                      await DataResetService.resetAllData(context);
+                    }
 
                     // 2️⃣ Navigate to Profile Setup
                     Navigator.pushReplacement(
