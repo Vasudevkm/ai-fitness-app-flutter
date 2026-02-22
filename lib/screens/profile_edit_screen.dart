@@ -320,9 +320,9 @@ class _ProfileEditScreenState
                     () async {
 
                   final experience =
-                      int.parse(
+                      int.tryParse(
                           experienceController
-                              .text);
+                              .text) ?? 0;
 
                   final level =
                       calculateLevel(
@@ -332,16 +332,16 @@ class _ProfileEditScreenState
                       UserProfile(
                     name:
                         nameController.text,
-                    age: int.parse(
+                    age: int.tryParse(
                         ageController
-                            .text),
+                            .text) ?? 0,
                     goal: goal,
-                    height: int.parse(
+                    height: int.tryParse(
                         heightController
-                            .text),
-                    weight: int.parse(
+                            .text) ?? 0,
+                    weight: int.tryParse(
                         weightController
-                            .text),
+                            .text) ?? 0,
                     experienceYears:
                         experience,
                     level: level,
@@ -359,8 +359,14 @@ class _ProfileEditScreenState
                       .saveUserProfile(
                           updatedProfile);
 
-                  Navigator.pop(
-                      context);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Profile updated successfully!"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 },
                 child:
                     const Text(

@@ -185,8 +185,8 @@ class _ProfileSetupScreenState
               onPressed: () async {
 
                 final experience =
-                    int.parse(
-                        experienceController.text);
+                    int.tryParse(
+                        experienceController.text) ?? 0;
 
                 final level =
                     calculateLevel(
@@ -196,13 +196,13 @@ class _ProfileSetupScreenState
                     UserProfile(
                   name:
                       nameController.text,
-                  age: int.parse(
-                      ageController.text),
+                  age: int.tryParse(
+                      ageController.text) ?? 0,
                   goal: goal,
-                  height: int.parse(
-                      heightController.text),
-                  weight: int.parse(
-                      weightController.text),
+                  height: int.tryParse(
+                      heightController.text) ?? 0,
+                  weight: int.tryParse(
+                      weightController.text) ?? 0,
                   experienceYears:
                       experience,
                   level: level,

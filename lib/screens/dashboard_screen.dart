@@ -77,101 +77,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Center(
                   child: Column(
                     children: [
-                      GestureDetector(
-                        onTap: () => _showGoalEditDialog(context, calorieProvider),
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.withOpacity(0.1),
-                                blurRadius: 20,
-                                spreadRadius: 5,
-                              )
-                            ],
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Background Track
-                              ShaderMask(
-                                shaderCallback: (rect) {
-                                  return SweepGradient(
-                                    startAngle: 0,
-                                    endAngle: 3.14 * 2,
-                                    stops: [calorieProgress, calorieProgress],
-                                    colors: [
-                                      Colors.greenAccent.shade400,
-                                      Colors.grey.shade200,
-                                    ],
-                                  ).createShader(rect);
-                                },
-                                child: Container(
-                                  width: 180,
-                                  height: 180,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              // Inner White Circle
-                              Container(
-                                width: 155,
-                                height: 155,
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.1),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            )
+                          ],
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Background Track
+                            ShaderMask(
+                              shaderCallback: (rect) {
+                                return SweepGradient(
+                                  startAngle: 0,
+                                  endAngle: 3.14 * 2,
+                                  stops: [calorieProgress, calorieProgress],
+                                  colors: [
+                                    Colors.greenAccent.shade400,
+                                    Colors.grey.shade200,
+                                  ],
+                                ).createShader(rect);
+                              },
+                              child: Container(
+                                width: 180,
+                                height: 180,
                                 decoration: const BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: Colors.white,
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "${calorieProvider.totalCalories.toInt()}",
-                                      style: const TextStyle(
-                                        fontSize: 42,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -1,
-                                      ),
-                                    ),
-                                    Text(
-                                      "OF ${calorieProvider.dailyGoal}",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      "kcal consumed",
-                                      style: TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
-                              // Edit Icon Overlay
-                              Positioned(
-                                bottom: 10,
-                                right: 10,
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.green,
-                                    shape: BoxShape.circle,
+                            ),
+                            // Inner White Circle
+                            Container(
+                              width: 155,
+                              height: 155,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "${calorieProvider.totalCalories.toInt()}",
+                                    style: const TextStyle(
+                                      fontSize: 42,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -1,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.edit, color: Colors.white, size: 14),
-                                ),
-                              )
-                            ],
-                          ),
+                                  Text(
+                                    "OF ${calorieProvider.dailyGoal}",
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    "kcal consumed",
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 40),
@@ -350,41 +334,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showGoalEditDialog(BuildContext context, CalorieProvider provider) {
-    final controller = TextEditingController(text: provider.dailyGoal.toString());
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Set Daily Calorie Goal"),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            hintText: "Enter calories (e.g. 2500)",
-            suffixText: "kcal",
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final val = int.tryParse(controller.text);
-              if (val != null && val > 0) {
-                provider.setDailyGoal(val);
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text("SAVE", style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
