@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/data_reset_service.dart';
+import '../services/user_profile_service.dart';
 import 'register_screen.dart';
 import 'dashboard_screen.dart';
+import 'profile_setup_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -84,12 +86,17 @@ class LoginScreen extends StatelessWidget {
                       await DataResetService.resetAllData(context);
                     }
 
-                    // Navigate to Dashboard
+                    // RESTORE: Pull the existing profile from Firestore if it exists
+                    final profile = await UserProfileService().fetchProfileFromFirestore();
+
+                    // Navigate based on profile existence
                     if (context.mounted) {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const DashboardScreen(),
+                          builder: (_) => profile != null
+                              ? const DashboardScreen()
+                              : const ProfileSetupScreen(),
                         ),
                       );
                     }
